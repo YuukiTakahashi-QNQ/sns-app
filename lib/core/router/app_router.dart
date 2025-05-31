@@ -19,21 +19,21 @@ class AppRouteNames {
 // GoRouterインスタンスを提供するプロバイダ
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/pageA', // アプリ起動時の初期パス
+    initialLocation: '/HomeTimeLineScreen', // アプリ起動時の初期パス
     debugLogDiagnostics: true, // デバッグログを有効化 (開発中便利)
 
     // ルート定義
     routes: <RouteBase>[
       GoRoute(
         name: AppRouteNames.HomeTimeLineScreen,
-        path: '/pageA',
+        path: '/HomeTimeLineScreen',
         builder: (BuildContext context, GoRouterState state) {
           return const HomeTimeLineScreen();
         },
       ),
       GoRoute(
         name: AppRouteNames.CreateTweetScreen,
-        path: '/pageB',
+        path: '/CreateTweetScreen',
         builder: (BuildContext context, GoRouterState state) {
           // PageBにパラメータを渡す例 (オプション)
           final message = state.uri.queryParameters['message'];
