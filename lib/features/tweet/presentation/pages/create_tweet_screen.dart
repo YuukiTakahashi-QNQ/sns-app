@@ -16,16 +16,6 @@ class CreateTweetScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(message ?? 'This is CreateTweetScreen (No message)'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                context.goNamed(
-                  AppRouteNames.pageC,
-                  pathParameters: {'id': '456'},
-                );
-              },
-              child: const Text('Go to Page C (with ID 456)'),
-            ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {

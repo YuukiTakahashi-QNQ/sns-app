@@ -27,17 +27,6 @@ class HomeTimeLineScreen extends ConsumerWidget {
               },
               child: const Text('Go to CreateTweetScreen (with message)'),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                // Page CへID付きで遷移
-                context.pushNamed( // pushNamedでスタックに追加
-                  AppRouteNames.pageC,
-                  pathParameters: {'id': '123'},
-                );
-              },
-              child: const Text('Push to Page C (with ID 123)'),
-            ),
           ],
         ),
       ),

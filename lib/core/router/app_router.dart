@@ -2,57 +2,45 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:train_sns_app/features/tweet/presentation/pages/create_tweet_screen.dart';
+import 'app_shell.dart';
 
 // 画面のプレースホルダ
 import '../../features/tweet/presentation/pages/home_timeline_screen.dart';
+import 'package:train_sns_app/features/tweet/presentation/pages/create_tweet_screen.dart';
 
-import '../../features/tweet/presentation/pages/page_c.dart';
-
-// ルート名を定数で管理
+// ルート名を定義するクラス
 class AppRouteNames {
   static const String HomeTimeLineScreen = 'HomeTimeLineScreen';
   static const String CreateTweetScreen = 'CreateTweetScreen';
-  static const String pageC = 'pageC';
 }
 
-// GoRouterインスタンスを提供するプロバイダ
+// GoRouterインスタンスを提供するProvider
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/HomeTimeLineScreen', // アプリ起動時の初期パス
-    debugLogDiagnostics: true, // デバッグログを有効化 (開発中便利)
-
-    // ルート定義
+    initialLocation: '/', // 最初に表示するパス
     routes: <RouteBase>[
-      GoRoute(
-        name: AppRouteNames.HomeTimeLineScreen,
-        path: '/HomeTimeLineScreen',
-        builder: (BuildContext context, GoRouterState state) {
-          return const HomeTimeLineScreen();
+      // AppShell を使ったルート (下部ナビゲーションバーを持つ画面群)
+      ShellRoute(
+        builder: (BuildContext context, GoRouterState state, Widget child) {
+          return AppShell(child: child); // AppShellでラップ
         },
-      ),
-      GoRoute(
-        name: AppRouteNames.CreateTweetScreen,
-        path: '/CreateTweetScreen',
-        builder: (BuildContext context, GoRouterState state) {
-          // PageBにパラメータを渡す例 (オプション)
-          final message = state.uri.queryParameters['message'];
-          return CreateTweetScreen(message: message);
-        },
-      ),
-      GoRoute(
-        name: AppRouteNames.pageC,
-        path: '/pageC/:id', // パスパラメータの例
-        builder: (BuildContext context, GoRouterState state) {
-          final id = state.pathParameters['id'];
-          return PageC(id: id);
-        },
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            name: 'HomeTimeLineScreen', // ルート名
+            builder: (BuildContext context, GoRouterState state) {
+              return const HomeTimeLineScreen(); // ホーム画面
+            },
+          ),
+          GoRoute(
+            path: '/CreateTweetScreen',
+            name: 'CreateTweetScreen',
+            builder: (BuildContext context, GoRouterState state) {
+              return const CreateTweetScreen(); // 検索画面
+            },
+          ),
+        ],
       ),
     ],
-    // エラーページ (任意)
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Error')),
-      body: Center(child: Text('Page not found: ${state.error}')),
-    ),
   );
 });
