@@ -21,21 +21,18 @@ class PageC extends ConsumerWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                context.goNamed(AppRouteNames.pageA);
+                context.goNamed(AppRouteNames.HomeTimeLineScreen);
               },
-              child: const Text('Go to Page A'),
+              child: const Text('Go to HomeTimeLineScreen'),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                // スタックのトップまで戻る (この例ではPageAまで戻ることが多い)
                 while(context.canPop()) {
                   context.pop();
                 }
-                // もし特定の場所に戻りたい場合は、goNamedを使う
-                // context.goNamed(AppRouteNames.pageA);
               },
-              child: const Text('Pop to Top (or Go to Page A)'),
+              child: const Text('Pop to Top (or Go to HomeTimeLineScreen)'),
             ),
           ],
         ),

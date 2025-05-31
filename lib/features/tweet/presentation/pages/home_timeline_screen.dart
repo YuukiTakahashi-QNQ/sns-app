@@ -1,32 +1,31 @@
-// lib/features/sample_pages/page_a.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 
-class PageA extends ConsumerWidget {
-  const PageA({super.key});
+class HomeTimeLineScreen extends ConsumerWidget {
+  const HomeTimeLineScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Page A')),
+      appBar: AppBar(title: const Text('HomeTimeLineScreen')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('This is Page A'),
+            const Text('This is HomeTimeLineScreen'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Page Bへメッセージ付きで遷移
+                // HomeTimeLineScreenへメッセージ付きで遷移
                 context.goNamed(
-                  AppRouteNames.pageB,
-                  queryParameters: {'message': 'Hello from Page A!'},
+                  AppRouteNames.CreateTweetScreen,
+                  queryParameters: {'message': 'Hello from HomeTimeLineScreen!'},
                 );
               },
-              child: const Text('Go to Page B (with message)'),
+              child: const Text('Go to CreateTweetScreen (with message)'),
             ),
             const SizedBox(height: 10),
             ElevatedButton(

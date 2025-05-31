@@ -1,27 +1,24 @@
-// lib/features/sample_pages/page_b.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../../core/router/app_router.dart';
 
-class PageB extends ConsumerWidget {
+class CreateTweetScreen extends ConsumerWidget {
   final String? message;
-  const PageB({super.key, this.message});
+  const CreateTweetScreen({super.key, this.message});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Page B')),
+      appBar: AppBar(title: const Text('CreateTweetScreen')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(message ?? 'This is Page B (No message)'),
+            Text(message ?? 'This is CreateTweetScreen (No message)'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Page CへID付きで遷移
                 context.goNamed(
                   AppRouteNames.pageC,
                   pathParameters: {'id': '456'},
@@ -35,11 +32,10 @@ class PageB extends ConsumerWidget {
                 if (context.canPop()) {
                   context.pop();
                 } else {
-                  // 戻れない場合はPageAへ (直接スタックされた場合など)
-                  context.goNamed(AppRouteNames.pageA);
+                  context.goNamed(AppRouteNames.CreateTweetScreen);
                 }
               },
-              child: const Text('Go Back (or to Page A)'),
+              child: const Text('Go Back (or to HomeTimeLineScreen)'),
             ),
           ],
         ),

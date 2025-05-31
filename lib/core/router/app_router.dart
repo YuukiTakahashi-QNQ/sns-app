@@ -2,16 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:train_sns_app/features/tweet/presentation/pages/create_tweet_screen.dart';
 
 // 画面のプレースホルダ
-import '../../features/timeline/presentation/pages/page_a.dart';
-import '../../features/timeline/presentation/pages/page_b.dart';
-import '../../features/timeline/presentation/pages/page_c.dart';
+import '../../features/tweet/presentation/pages/home_timeline_screen.dart';
+
+import '../../features/tweet/presentation/pages/page_c.dart';
 
 // ルート名を定数で管理
 class AppRouteNames {
-  static const String pageA = 'pageA';
-  static const String pageB = 'pageB';
+  static const String HomeTimeLineScreen = 'HomeTimeLineScreen';
+  static const String CreateTweetScreen = 'CreateTweetScreen';
   static const String pageC = 'pageC';
 }
 
@@ -24,19 +25,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // ルート定義
     routes: <RouteBase>[
       GoRoute(
-        name: AppRouteNames.pageA,
+        name: AppRouteNames.HomeTimeLineScreen,
         path: '/pageA',
         builder: (BuildContext context, GoRouterState state) {
-          return const PageA();
+          return const HomeTimeLineScreen();
         },
       ),
       GoRoute(
-        name: AppRouteNames.pageB,
+        name: AppRouteNames.CreateTweetScreen,
         path: '/pageB',
         builder: (BuildContext context, GoRouterState state) {
           // PageBにパラメータを渡す例 (オプション)
           final message = state.uri.queryParameters['message'];
-          return PageB(message: message);
+          return CreateTweetScreen(message: message);
         },
       ),
       GoRoute(
