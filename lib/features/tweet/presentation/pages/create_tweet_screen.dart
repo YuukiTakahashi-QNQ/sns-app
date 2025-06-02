@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
+import '../providers/trend_provider.dart';
 
 class CreateTweetScreen extends ConsumerWidget {
   final String? message;
@@ -9,7 +10,7 @@ class CreateTweetScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tweets = List.generate(20, (i) => 'ツイート $i');
+    final trendsAsync = ref.watch(trendListProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('CreateTweetScreen')),
@@ -30,22 +31,26 @@ class CreateTweetScreen extends ConsumerWidget {
               child: const Text('Go Back (or to HomeTimeLineScreen)'),
             ),
             const SizedBox(height: 20),
-
-            // ツイート一覧を表示
+            // APIから取得したツイート一覧
             Expanded(
-              child: ListView.builder(
-                itemCount: tweets.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(tweets[index]),
-                    onTap: () {
-                      // ツイートをタップしたときの処理
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Tapped on ${tweets[index]}')),
-                      );
-                    },
-                  );
-                },
+              child: trendsAsync.when(
+                data: (trends) => ListView.builder(
+                  itemCount: trends.length,
+                  itemBuilder: (context, index) {
+                    final trend = trends[index];
+                    return ListTile(
+                      title: Text(trend.title),
+                      subtitle: Text('投稿数: ${trend.postCount}'),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Tapped on ${trend.title}')),
+                        );
+                      },
+                    );
+                  },
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (e, _) => Text('エラー: $e'),
               ),
             ),
           ],
