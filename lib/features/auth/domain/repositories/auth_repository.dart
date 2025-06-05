@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../entities/user.dart';
 abstract class AuthRepository {
   // サインアップ（新規登録）
   Future<User> signUp(String email, String password);
