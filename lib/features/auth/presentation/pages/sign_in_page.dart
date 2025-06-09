@@ -11,6 +11,7 @@ class SignInPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 認証状態の監視
     final authState = ref.watch(authStateProvider);
 
     // 認証状態を監視し、認証済みならホーム画面にリダイレクト
@@ -18,53 +19,92 @@ class SignInPage extends ConsumerWidget {
       if (current.status == AuthStatus.authenticated) {
         context.go('/'); // ホーム画面へリダイレクト
       }
+
+      // エラーが発生した場合はスナックバーでエラーメッセージを表示
+      if (current.status == AuthStatus.error && current.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(current.errorMessage!),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ログイン'),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // エラーメッセージ表示
-              if (authState.errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  color: Colors.red.shade100,
-                  child: Text(
-                    authState.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // アプリロゴ
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 80,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(height: 24),
+
+                // アプリ名
+                Text(
+                  'SNS App',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
+                const SizedBox(height: 48),
 
-              // ログインフォーム
-              AuthForm(
-                formTitle: 'ログイン',
-                buttonLabel: 'ログイン',
-                isLoading: authState.status == AuthStatus.loading,
-                onSubmit: (email, password) {
-                  ref.read(authStateProvider.notifier).signIn(email, password);
-                },
-              ),
+                // ログインフォーム
+                AuthForm(
+                  formTitle: 'ログイン',
+                  buttonLabel: 'ログイン',
+                  isLoading: authState.status == AuthStatus.loading,
+                  onSubmit: (email, password) {
+                    ref
+                        .read(authStateProvider.notifier)
+                        .signIn(email, password);
+                  },
+                ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-              // 新規登録ページへのリンク
-              TextButton(
-                onPressed: () => context.push('/signup'),
-                child: const Text('アカウント登録はこちら'),
-              ),
+                // 新規登録ページへのリンク
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('アカウントをお持ちでない方は'),
+                    TextButton(
+                      onPressed: () => context.go('/signup'),
+                      child: const Text('新規登録'),
+                    ),
+                  ],
+                ),
 
-              // パスワードリセットページへのリンク
-              TextButton(
-                onPressed: () => context.push('/reset-password'),
-                child: const Text('パスワードをお忘れの方'),
-              ),
-            ],
+                // パスワードリセットリンク
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: () {
+                      // パスワードリセット機能（未実装）
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('パスワードリセット機能は準備中です'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: const Text('パスワードをお忘れの方'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

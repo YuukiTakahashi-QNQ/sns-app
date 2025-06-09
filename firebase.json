@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"habittrackerapp-5a157","appId":"1:538872327654:android:a525d7e2cf83e7d12a3a27","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"habittrackerapp-5a157","configurations":{"android":"1:538872327654:android:a525d7e2cf83e7d12a3a27","ios":"1:538872327654:ios:78067cee1d7794732a3a27","web":"1:538872327654:web:2b88a1fab2746b872a3a27"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "training-sns-app-3e0f4",
+          "appId": "1:72054995149:android:b2f6d7cd07c61fa20c5184",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "training-sns-app-3e0f4",
+          "configurations": {
+            "android": "1:72054995149:android:b2f6d7cd07c61fa20c5184",
+            "ios": "1:72054995149:ios:5668e4f0e166b6d70c5184",
+            "web": "1:72054995149:web:29d463bcafc1ad740c5184"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    }
+  }
+}

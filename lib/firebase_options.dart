@@ -47,29 +47,30 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCnJNccYZcZNIh8Ct_V57iDTI4P0oQze6s',
-    appId: '1:538872327654:web:2b88a1fab2746b872a3a27',
-    messagingSenderId: '538872327654',
-    projectId: 'habittrackerapp-5a157',
-    authDomain: 'habittrackerapp-5a157.firebaseapp.com',
-    storageBucket: 'habittrackerapp-5a157.firebasestorage.app',
-    measurementId: 'G-3JP645M3WV',
+    apiKey: 'AIzaSyArKpWEkEOQEnD4oVUdHLabT0Fpq19BKLU',
+    appId: '1:72054995149:web:29d463bcafc1ad740c5184',
+    messagingSenderId: '72054995149',
+    projectId: 'training-sns-app-3e0f4',
+    authDomain: 'training-sns-app-3e0f4.firebaseapp.com',
+    storageBucket: 'training-sns-app-3e0f4.firebasestorage.app',
+    measurementId: 'G-MT7CB2L3DT',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBszI18yTwMfzT8zkonYlXaFShm_s4XxIU',
-    appId: '1:538872327654:android:a525d7e2cf83e7d12a3a27',
-    messagingSenderId: '538872327654',
-    projectId: 'habittrackerapp-5a157',
-    storageBucket: 'habittrackerapp-5a157.firebasestorage.app',
+    apiKey: 'AIzaSyBa4665jMV2wUNQYhEQn4zbHXp64pVtMy0',
+    appId: '1:72054995149:android:b2f6d7cd07c61fa20c5184',
+    messagingSenderId: '72054995149',
+    projectId: 'training-sns-app-3e0f4',
+    storageBucket: 'training-sns-app-3e0f4.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA5vGl_d59Q73AB3Kj6Nsu2vpdjP_OznJo',
-    appId: '1:538872327654:ios:78067cee1d7794732a3a27',
-    messagingSenderId: '538872327654',
-    projectId: 'habittrackerapp-5a157',
-    storageBucket: 'habittrackerapp-5a157.firebasestorage.app',
+    apiKey: 'AIzaSyARX3zC7DvL7AbptsS5CzlRhHt-JAWgf1A',
+    appId: '1:72054995149:ios:5668e4f0e166b6d70c5184',
+    messagingSenderId: '72054995149',
+    projectId: 'training-sns-app-3e0f4',
+    storageBucket: 'training-sns-app-3e0f4.firebasestorage.app',
     iosBundleId: 'com.example.trainSnsApp',
   );
+
 }
