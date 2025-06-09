@@ -36,9 +36,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final String path = state.uri.path;
       final isAuthRequired =
           !path.startsWith('/login') && !path.startsWith('/signup');
-
-      // 認証状態をチェック
       final isAuthenticated = authState.status == AuthStatus.authenticated;
+      final needsDisplayName = authState.status == AuthStatus.needsDisplayName;
+
+      // プロフィール設定が必要な状態の処理
+      if (needsDisplayName) {
+        // プロフィール設定ページにいない場合は設定ページへリダイレクト
+        if (!path.startsWith('/profile')) {
+          return '/profile';
+        }
+        return null;
+      }
 
       // 認証が必要なパスで、未認証の場合はログイン画面にリダイレクト
       if (isAuthRequired && !isAuthenticated) {

@@ -6,4 +6,9 @@ abstract class TweetRepository {
   Future<List<Tweet>> fetchTweets();
   Future<Tweet> createTweet(String content, auth.User user);
   Stream<List<Tweet>> tweetsStream();
+
+  // 特定ユーザーのツイートを取得するメソッド
+  Future<List<Tweet>> fetchTweetsByAuthor(String authorId);
+  // 特定ユーザーのツイートをストリームで購読するメソッド
+  Stream<List<Tweet>> tweetsByAuthorStream(String authorId);
 }

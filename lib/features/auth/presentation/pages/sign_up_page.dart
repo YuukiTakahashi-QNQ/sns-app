@@ -1,10 +1,12 @@
 // lib/features/auth/presentation/pages/sign_up_page.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 import '../widgets/auth_form.dart';
+import '../widgets/profile_setup_dialog.dart';
 
 class SignUpPage extends ConsumerWidget {
   const SignUpPage({super.key});
@@ -15,20 +17,39 @@ class SignUpPage extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
 
     // 認証状態を監視し、認証済みならホーム画面にリダイレクト
-    ref.listen<AuthState>(authStateProvider, (previous, current) {
-      if (current.status == AuthStatus.authenticated) {
+    ref.listen<AuthState>(authStateProvider, (previous, current) async {
+      if (current.status == AuthStatus.needsDisplayName) {
+        // プロフィール設定ダイアログを表示
+        final result = await showDialog<Map<String, dynamic>>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const ProfileSetupDialog(),
+        );
+
+        if (result != null) {
+          // プロフィール情報を更新
+          await ref
+              .read(authStateProvider.notifier)
+              .updateUserProfile(
+                displayName: result['name'] as String,
+                imageFile: result['imageFile'] as File?,
+              );
+        }
+      } else if (current.status == AuthStatus.authenticated) {
         context.go('/'); // ホーム画面へリダイレクト
       }
 
       // エラーが発生した場合はスナックバーでエラーメッセージを表示
       if (current.status == AuthStatus.error && current.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(current.errorMessage!),
-            backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(current.errorMessage!),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     });
 

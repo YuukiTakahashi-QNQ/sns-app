@@ -2,9 +2,10 @@
 class Tweet {
   final int? id;
   final String content;
-  final String userId;
+  final String userId; // authorIdに相当
   final DateTime createdAt;
   final String userName;
+  final String? userPhotoUrl;
 
   Tweet({
     this.id,
@@ -12,5 +13,6 @@ class Tweet {
     required this.userId,
     required this.createdAt,
     required this.userName,
+    this.userPhotoUrl,
   });
 }

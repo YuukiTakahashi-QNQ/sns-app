@@ -42,17 +42,25 @@ class _CreateTweetScreenState extends ConsumerState<CreateTweetScreen> {
 
         if (mounted) {
           _tweetController.clear();
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('ツイートを投稿しました！')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('ツイートを投稿しました！'),
+              backgroundColor: Colors.green.shade400,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           // タイムラインに戻る
           context.goNamed(AppRouteNames.HomeTimeLineScreen);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('ツイート投稿エラー: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('ツイート投稿エラー: $e'),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       } finally {
         if (mounted) {
@@ -67,43 +75,72 @@ class _CreateTweetScreenState extends ConsumerState<CreateTweetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('新規ツイート作成'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.goNamed(AppRouteNames.HomeTimeLineScreen),
+        ),
+        title: const Text(
+          '新規ツイート',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitTweet,
-            child: Text(
-              '投稿',
-              style: TextStyle(
-                color: _isSubmitting ? Colors.grey : Colors.blue,
-                fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitTweet,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
+              child:
+                  _isSubmitting
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const Text('ツイート'),
             ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            if (widget.message != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Text(widget.message!),
-              ),
-            Expanded(
-              child: TextField(
-                controller: _tweetController,
-                maxLines: null,
-                decoration: const InputDecoration(
-                  hintText: 'いまどうしてる？',
-                  border: InputBorder.none,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              if (widget.message != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    widget.message!,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 ),
-                autofocus: true,
+              Expanded(
+                child: TextField(
+                  controller: _tweetController,
+                  maxLines: null,
+                  decoration: const InputDecoration(
+                    hintText: 'いまどうしてる？',
+                    border: InputBorder.none,
+                  ),
+                  style: const TextStyle(fontSize: 16),
+                  autofocus: true,
+                ),
               ),
-            ),
-            if (_isSubmitting) const Center(child: CircularProgressIndicator()),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -4,6 +4,8 @@ class User {
   final String? displayName;
   final String? photoUrl;
   final bool isEmailVerified;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   User({
     required this.id,
@@ -11,5 +13,7 @@ class User {
     this.displayName,
     this.photoUrl,
     this.isEmailVerified = false,
+    this.createdAt,
+    this.updatedAt,
   });
 }

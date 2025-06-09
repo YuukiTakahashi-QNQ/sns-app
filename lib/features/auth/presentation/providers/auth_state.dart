@@ -4,11 +4,12 @@ import '../../domain/entities/user.dart';
 
 // 認証状態を表す列挙型
 enum AuthStatus {
-  initial,     // 初期状態
-  loading,     // 読み込み中
-  authenticated,  // 認証済み
+  initial, // 初期状態
+  loading, // 読み込み中
+  authenticated, // 認証済み
   unauthenticated, // 未認証
-  error,       // エラー
+  needsDisplayName, // 表示名の設定が必要
+  error, // エラー
 }
 
 // 認証状態を管理するクラス
@@ -24,11 +25,7 @@ class AuthState {
   });
 
   // 新しいインスタンスを生成するコピーメソッド
-  AuthState copyWith({
-    AuthStatus? status,
-    User? user,
-    String? errorMessage,
-  }) {
+  AuthState copyWith({AuthStatus? status, User? user, String? errorMessage}) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
