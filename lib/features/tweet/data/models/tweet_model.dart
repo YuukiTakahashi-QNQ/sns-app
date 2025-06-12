@@ -4,6 +4,9 @@ import '../../../../core/error/app_error.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TweetModel extends Tweet {
+  // FirestoreのドキュメントのオリジナルのドキュメントIDを保存
+  final String? firestoreId;
+
   TweetModel({
     int? id,
     required String content,
@@ -11,6 +14,9 @@ class TweetModel extends Tweet {
     required DateTime createdAt,
     required String userName,
     String? userPhotoUrl,
+    List<String>? likedBy,
+    int? likeCount,
+    this.firestoreId,
   }) : super(
          id: id,
          content: content,
@@ -18,11 +24,21 @@ class TweetModel extends Tweet {
          createdAt: createdAt,
          userName: userName,
          userPhotoUrl: userPhotoUrl,
+         likedBy: likedBy,
+         likeCount: likeCount,
        );
 
   /// JSONからTweetModelを生成するファクトリメソッド
   factory TweetModel.fromJson(Map<String, dynamic> json) {
     try {
+      // Firestoreドキュメント ID を適切に処理
+      String? firestoreId;
+      if (json['document_id'] != null && json['document_id'] is String) {
+        firestoreId = json['document_id'];
+      } else if (json['id'] != null && json['id'] is String) {
+        firestoreId = json['id'];
+      }
+
       return TweetModel(
         id: _parseId(json),
         content: _parseContent(json),
@@ -30,6 +46,9 @@ class TweetModel extends Tweet {
         createdAt: _parseCreatedAt(json),
         userName: _parseUserName(json),
         userPhotoUrl: _parseUserPhotoUrl(json),
+        likedBy: _parseLikedBy(json),
+        likeCount: _parseLikeCount(json),
+        firestoreId: firestoreId,
       );
     } catch (e) {
       print('JSON parsing error for tweet: ${json.toString()}');
@@ -47,6 +66,8 @@ class TweetModel extends Tweet {
       'created_at': FieldValue.serverTimestamp(),
       'user_name': userName,
       'user_photo_url': userPhotoUrl,
+      'liked_by': likedBy,
+      'like_count': likeCount,
     };
   }
 
@@ -62,6 +83,34 @@ class TweetModel extends Tweet {
       return null;
     }
     throw AppError.validation('無効なツイートID形式です');
+  }
+
+  /// Firestoreのドキュメントの実際のID (文字列) を取得するメソッド
+  /// これは `id` フィールドが null の場合にも使えるようにするため
+  String? get documentId {
+    String? result;
+    // まずfirestoreIdを返す（これが最も信頼性が高い）
+    if (firestoreId != null &&
+        firestoreId!.isNotEmpty &&
+        firestoreId != "null") {
+      result = firestoreId;
+    } else {
+      // 次にtoJson()のidを試す
+      final rawId = toJson()['id'];
+      if (rawId != null &&
+          rawId.toString().isNotEmpty &&
+          rawId.toString() != "null") {
+        result = rawId.toString();
+      } else {
+        // 最後にidフィールドを試す
+        result = id?.toString();
+      }
+    }
+
+    print(
+      'documentId getter: firestoreId=$firestoreId, id=${id}, result=$result',
+    );
+    return result;
   }
 
   /// コンテンツをパース
@@ -137,5 +186,33 @@ class TweetModel extends Tweet {
       throw AppError.validation('無効な写真URL形式です');
     }
     return photoUrl;
+  }
+
+  /// いいねしたユーザーIDのリストをパース
+  static List<String> _parseLikedBy(Map<String, dynamic> json) {
+    final likedBy = json['liked_by'];
+    if (likedBy == null) return [];
+
+    if (likedBy is List) {
+      return likedBy.map((item) => item.toString()).toList();
+    }
+
+    return [];
+  }
+
+  /// いいね数をパース
+  static int _parseLikeCount(Map<String, dynamic> json) {
+    final likeCount = json['like_count'];
+    if (likeCount == null) return 0;
+
+    if (likeCount is int) {
+      return likeCount;
+    }
+
+    if (likeCount is String) {
+      return int.tryParse(likeCount) ?? 0;
+    }
+
+    return 0;
   }
 }

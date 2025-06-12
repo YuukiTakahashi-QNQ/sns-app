@@ -18,9 +18,7 @@ service cloud.firestore {
       
       // テストユーザーの特別なルール
       allow read, write: if userId == 'test-user-uid-001';
-    }
-
-    // ツイートドキュメントのルール
+    }    // ツイートドキュメントのルール
     match /tweets/{tweetId} {
       // 全ユーザーが読み取り可能
       allow read: if true;
@@ -29,9 +27,24 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
         request.resource.data.user_id == request.auth.uid;
       
-      // 自分のツイートのみ更新・削除可能
-      allow update, delete: if isAuthenticated() && 
-        resource.data.user_id == request.auth.uid;
+      // いいね操作の場合は、認証済みユーザーなら誰でも更新可能
+      // liked_byフィールドとlike_countフィールドのみの更新を許可
+      allow update: if isAuthenticated() && 
+        (
+          // 自分のツイートなら何でも更新可能
+          resource.data.user_id == request.auth.uid ||
+          // 他人のツイートでも、いいね関連フィールドのみ更新可能
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liked_by', 'like_count']) &&
+            // その他のフィールドが変更されていないことを確認
+            request.resource.data.user_id == resource.data.user_id &&
+            request.resource.data.content == resource.data.content &&
+            request.resource.data.created_at == resource.data.created_at
+          )
+        );
+      
+      // 削除は所有者のみ可能
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
         
       // テストユーザーの特別なルール
       allow write: if request.resource.data.user_id == 'test-user-uid-001';

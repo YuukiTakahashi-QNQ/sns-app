@@ -12,6 +12,8 @@ abstract class TweetFirestoreDataSource {
   Stream<List<TweetModel>> tweetsStream();
   Future<List<TweetModel>> fetchTweetsByAuthor(String authorId);
   Stream<List<TweetModel>> tweetsByAuthorStream(String authorId);
+  Future<void> toggleLike(String tweetId, String userId);
+  Future<bool> isLikedByUser(String tweetId, String userId);
 }
 
 class TweetFirestoreDataSourceImpl implements TweetFirestoreDataSource {
@@ -59,31 +61,31 @@ class TweetFirestoreDataSourceImpl implements TweetFirestoreDataSource {
       }
       if (user.id.trim().isEmpty) {
         throw AppError.validation('無効なユーザーIDです');
-      }
-
-      // 新しいツイートのデータ作成
+      } // 新しいツイートのデータ作成
       final newTweet = {
         'content': content.trim(),
         'user_id': user.id,
         'user_name': user.displayName?.trim() ?? 'ユーザー',
         'user_photo_url': user.photoUrl,
         'created_at': FieldValue.serverTimestamp(),
+        'liked_by': [],
+        'like_count': 0,
       };
 
       // トランザクションを使用してツイートを保存
       final docRef = _tweetsCollection.doc();
-      await docRef.set(newTweet);
-
-      // 保存したツイートを取得して返す
+      await docRef.set(newTweet); // 保存したツイートを取得して返す
       final docSnapshot = await docRef.get();
       if (!docSnapshot.exists) {
         throw AppError.database(null, 'ツイートの保存に失敗しました');
       }
 
       final data = docSnapshot.data() as Map<String, dynamic>;
+      print('Created new tweet with document ID: ${docSnapshot.id}');
       return TweetModel.fromJson({
         ...data,
-        'id': docSnapshot.id,
+        'document_id': docSnapshot.id, // 専用のドキュメントIDフィールド
+        'id': docSnapshot.id, // 後方互換性のために残す
         // serverTimestampがまだ処理されていない場合は現在時刻を使用
         'created_at': data['created_at'] ?? FieldValue.serverTimestamp(),
       });
@@ -193,6 +195,124 @@ class TweetFirestoreDataSourceImpl implements TweetFirestoreDataSource {
     }
   }
 
+  @override
+  Future<void> toggleLike(String tweetId, String userId) async {
+    try {
+      if (tweetId.trim().isEmpty || userId.trim().isEmpty) {
+        throw AppError.validation('無効なツイートIDまたはユーザーIDです');
+      }
+
+      // トランザクション前にドキュメントの存在確認
+      print('【いいね処理】ツイートID: $tweetId, ユーザーID: $userId');
+
+      // 事前確認
+      final docExists = await _tweetsCollection
+          .doc(tweetId)
+          .get()
+          .then((doc) => doc.exists)
+          .catchError((e) {
+            print('ドキュメントの存在確認中にエラー: $e');
+            return false;
+          });
+
+      if (!docExists) {
+        print('事前確認: ツイートドキュメントが見つかりません: $tweetId');
+        throw AppError.database(null, 'ツイートが存在しません');
+      }
+
+      // トランザクションを使用して、いいねの追加/削除を実行
+      return _firestore.runTransaction((transaction) async {
+        final tweetRef = _tweetsCollection.doc(tweetId);
+        final tweetDoc = await transaction.get(tweetRef);
+
+        if (!tweetDoc.exists) {
+          print('トランザクション内: ツイートドキュメントが見つかりません: $tweetId');
+          throw AppError.database(null, 'ツイートが存在しません');
+        }
+
+        final data = tweetDoc.data() as Map<String, dynamic>;
+
+        // Handle missing like fields
+        List<String> likedBy = [];
+        int likeCount = 0;
+
+        // Extract liked_by with null checking
+        if (data.containsKey('liked_by')) {
+          likedBy = _parseStringList(data['liked_by']);
+        }
+
+        // Extract like_count with null checking
+        if (data.containsKey('like_count') && data['like_count'] is int) {
+          likeCount = data['like_count'];
+        } else {
+          // If like_count doesn't exist or is invalid, use the length of likedBy
+          likeCount = likedBy.length;
+        }
+
+        // ユーザーがすでにいいねしている場合は削除、そうでなければ追加
+        if (likedBy.contains(userId)) {
+          likedBy.remove(userId);
+          likeCount = likeCount > 0 ? likeCount - 1 : 0;
+        } else {
+          likedBy.add(userId);
+          likeCount += 1;
+        }
+
+        // ドキュメントの更新
+        transaction.update(tweetRef, {
+          'liked_by': likedBy,
+          'like_count': likeCount,
+        });
+      });
+    } on FirebaseException catch (e) {
+      print('Firebase error in toggleLike: ${e.code} - ${e.message}');
+      print('Error details: ${e.toString()}');
+      print('ツイートID: $tweetId, ユーザーID: $userId');
+
+      if (e.code == 'permission-denied') {
+        print('権限エラー: Firestoreのセキュリティルールで拒否されました');
+        throw AppError.database(e, 'いいねの操作権限がありません');
+      } else if (e.code == 'unavailable') {
+        throw AppError.network(e, 'ネットワークエラーが発生しました');
+      }
+      throw AppError.database(e, 'いいね操作に失敗しました: ${e.message}');
+    } catch (e, stackTrace) {
+      if (e is AppError) rethrow;
+      print('Unexpected error in toggleLike: $e\n$stackTrace');
+      throw AppError.unexpected(e, 'いいね操作に失敗しました');
+    }
+  }
+
+  @override
+  Future<bool> isLikedByUser(String tweetId, String userId) async {
+    try {
+      if (tweetId.trim().isEmpty || userId.trim().isEmpty) {
+        throw AppError.validation('無効なツイートIDまたはユーザーIDです');
+      }
+
+      final tweetDoc = await _tweetsCollection.doc(tweetId).get();
+      if (!tweetDoc.exists) {
+        throw AppError.database(null, 'ツイートが存在しません');
+      }
+
+      final data = tweetDoc.data() as Map<String, dynamic>;
+
+      // Handle case where liked_by field might not exist
+      if (!data.containsKey('liked_by')) {
+        return false; // If liked_by doesn't exist, no one has liked the tweet
+      }
+
+      final likedBy = _parseStringList(data['liked_by']);
+      return likedBy.contains(userId);
+    } on FirebaseException catch (e) {
+      print('Firebase error in isLikedByUser: ${e.code} - ${e.message}');
+      throw AppError.database(e, 'いいね状態の確認に失敗しました: ${e.message}');
+    } catch (e) {
+      if (e is AppError) rethrow;
+      throw AppError.unexpected(e, 'いいね状態の確認に失敗しました');
+    }
+  }
+
   // QuerySnapshotからTweetModelのリストに変換するヘルパーメソッド
   List<TweetModel> _convertQuerySnapshotToTweets(QuerySnapshot querySnapshot) {
     final tweets =
@@ -206,13 +326,25 @@ class TweetFirestoreDataSourceImpl implements TweetFirestoreDataSource {
                   print('Data: $data');
                   return null;
                 }
-                return TweetModel.fromJson({
+
+                // doc.idをdocument_idフィールドに設定して、確実にFirestoreドキュメントIDが保存されるようにする
+                print('Converting document: ${doc.id}');
+
+                // データを変換する前に、ドキュメントIDが含まれているか確認
+                final modifiedData = {
                   ...data,
-                  'id': doc.id,
+                  'document_id': doc.id, // 文字列としてドキュメントIDを専用フィールドに保存
+                  'id':
+                      data['id'] ?? doc.id, // 既存のidフィールドがあれば保持、なければドキュメントIDを使用
                   // serverTimestampがまだ処理されていない場合は現在時刻を使用
-                  'created_at':
-                      data['created_at'] ?? FieldValue.serverTimestamp(),
-                });
+                  'created_at': data['created_at'] ?? DateTime.now(),
+                };
+
+                print(
+                  'Modified data for document ${doc.id}: document_id=${modifiedData["document_id"]}, id=${modifiedData["id"]}',
+                );
+
+                return TweetModel.fromJson(modifiedData);
               } catch (e, stackTrace) {
                 print(
                   'Warning: Failed to parse tweet document ${doc.id}: $e\n$stackTrace',
@@ -261,5 +393,50 @@ class TweetFirestoreDataSourceImpl implements TweetFirestoreDataSource {
     }
 
     return true;
+  }
+
+  // 文字列リストをパースするヘルパーメソッド
+  List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+
+    if (value is List) {
+      return value.map((item) => item.toString()).toList();
+    }
+
+    // Handle case where value is a single string (maybe a comma-separated list)
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return [];
+
+      // Check if it might be a comma-separated list
+      if (trimmed.contains(',')) {
+        return trimmed
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+
+      // Single value
+      return [trimmed];
+    }
+
+    // Handle case where value is a Map (unlikely but being defensive)
+    if (value is Map) {
+      try {
+        return value.keys.map((k) => k.toString()).toList();
+      } catch (e) {
+        print('Failed to convert Map to string list: $e');
+        return [];
+      }
+    }
+
+    // Fallback
+    try {
+      return [value.toString()];
+    } catch (e) {
+      print('Failed to convert value to string list: $e');
+      return [];
+    }
   }
 }
