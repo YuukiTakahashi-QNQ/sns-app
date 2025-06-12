@@ -103,4 +103,42 @@ class TweetRepositoryImpl implements TweetRepository {
       throw AppError.unexpected(e, 'ユーザーのツイート取得に失敗しました。');
     }
   }
+
+  @override
+  Future<void> toggleLike(String tweetId, String userId) async {
+    try {
+      if (tweetId.trim().isEmpty) {
+        throw AppError.validation('ツイートIDが無効です');
+      }
+      if (userId.trim().isEmpty) {
+        throw AppError.validation('ユーザーIDが無効です');
+      }
+
+      await firestoreDataSource.toggleLike(tweetId, userId);
+    } on FirebaseException catch (e) {
+      throw AppError.database(e, 'いいね操作に失敗しました: ${e.message}');
+    } catch (e) {
+      if (e is AppError) rethrow;
+      throw AppError.unexpected(e, 'いいね操作に失敗しました。');
+    }
+  }
+
+  @override
+  Future<bool> isLikedByUser(String tweetId, String userId) async {
+    try {
+      if (tweetId.trim().isEmpty) {
+        throw AppError.validation('ツイートIDが無効です');
+      }
+      if (userId.trim().isEmpty) {
+        throw AppError.validation('ユーザーIDが無効です');
+      }
+
+      return await firestoreDataSource.isLikedByUser(tweetId, userId);
+    } on FirebaseException catch (e) {
+      throw AppError.database(e, 'いいね状態の確認に失敗しました: ${e.message}');
+    } catch (e) {
+      if (e is AppError) rethrow;
+      throw AppError.unexpected(e, 'いいね状態の確認に失敗しました。');
+    }
+  }
 }

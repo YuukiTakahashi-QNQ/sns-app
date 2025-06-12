@@ -12,6 +12,8 @@ import '../../domain/usecases/fetch_tweets_usecase.dart';
 import '../../domain/usecases/fetch_tweets_by_author_usecase.dart';
 import '../../domain/usecases/get_tweets_stream_usecase.dart';
 import '../../domain/usecases/get_tweets_by_author_stream_usecase.dart';
+import '../../domain/usecases/toggle_like_usecase.dart';
+import '../../domain/usecases/is_liked_by_user_usecase.dart';
 import 'tweet_state.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -75,17 +77,32 @@ final getTweetsByAuthorStreamUseCaseProvider =
       return GetTweetsByAuthorStreamUseCase(repository);
     });
 
+// いいね関連のユースケースプロバイダー
+final toggleLikeUseCaseProvider = Provider<ToggleLikeUseCase>((ref) {
+  final repository = ref.watch(tweetRepositoryProvider);
+  return ToggleLikeUseCase(repository);
+});
+
+final isLikedByUserUseCaseProvider = Provider<IsLikedByUserUseCase>((ref) {
+  final repository = ref.watch(tweetRepositoryProvider);
+  return IsLikedByUserUseCase(repository);
+});
+
 // Tweet state provider
 final tweetStateProvider =
     StateNotifierProvider<TweetStateNotifier, TweetState>((ref) {
       final fetchTweetsUseCase = ref.watch(fetchTweetsUseCaseProvider);
       final createTweetUseCase = ref.watch(createTweetUseCaseProvider);
       final getTweetsStreamUseCase = ref.watch(getTweetsStreamUseCaseProvider);
+      final toggleLikeUseCase = ref.watch(toggleLikeUseCaseProvider);
+      final isLikedByUserUseCase = ref.watch(isLikedByUserUseCaseProvider);
 
       return TweetStateNotifier(
         fetchTweetsUseCase: fetchTweetsUseCase,
         createTweetUseCase: createTweetUseCase,
         getTweetsStreamUseCase: getTweetsStreamUseCase,
+        toggleLikeUseCase: toggleLikeUseCase,
+        isLikedByUserUseCase: isLikedByUserUseCase,
       );
     });
 
@@ -101,6 +118,8 @@ final extendedTweetStateProvider =
       final getTweetsByAuthorStreamUseCase = ref.watch(
         getTweetsByAuthorStreamUseCaseProvider,
       );
+      final toggleLikeUseCase = ref.watch(toggleLikeUseCaseProvider);
+      final isLikedByUserUseCase = ref.watch(isLikedByUserUseCaseProvider);
 
       return TweetStateNotifier(
         fetchTweetsUseCase: fetchTweetsUseCase,
@@ -108,6 +127,8 @@ final extendedTweetStateProvider =
         getTweetsStreamUseCase: getTweetsStreamUseCase,
         fetchTweetsByAuthorUseCase: fetchTweetsByAuthorUseCase,
         getTweetsByAuthorStreamUseCase: getTweetsByAuthorStreamUseCase,
+        toggleLikeUseCase: toggleLikeUseCase,
+        isLikedByUserUseCase: isLikedByUserUseCase,
       );
     });
 

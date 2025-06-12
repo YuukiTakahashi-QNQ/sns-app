@@ -11,4 +11,8 @@ abstract class TweetRepository {
   Future<List<Tweet>> fetchTweetsByAuthor(String authorId);
   // 特定ユーザーのツイートをストリームで購読するメソッド
   Stream<List<Tweet>> tweetsByAuthorStream(String authorId);
+
+  // いいね機能のメソッド
+  Future<void> toggleLike(String tweetId, String userId);
+  Future<bool> isLikedByUser(String tweetId, String userId);
 }

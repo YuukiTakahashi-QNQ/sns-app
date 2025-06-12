@@ -7,6 +7,8 @@ import '../../domain/usecases/fetch_tweets_usecase.dart';
 import '../../domain/usecases/get_tweets_stream_usecase.dart';
 import '../../domain/usecases/fetch_tweets_by_author_usecase.dart';
 import '../../domain/usecases/get_tweets_by_author_stream_usecase.dart';
+import '../../domain/usecases/toggle_like_usecase.dart';
+import '../../domain/usecases/is_liked_by_user_usecase.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 
 enum TweetStatus { initial, loading, loaded, error }
@@ -48,6 +50,8 @@ class TweetStateNotifier extends StateNotifier<TweetState> {
   final GetTweetsStreamUseCase getTweetsStreamUseCase;
   final FetchTweetsByAuthorUseCase? fetchTweetsByAuthorUseCase;
   final GetTweetsByAuthorStreamUseCase? getTweetsByAuthorStreamUseCase;
+  final ToggleLikeUseCase? toggleLikeUseCase;
+  final IsLikedByUserUseCase? isLikedByUserUseCase;
   StreamSubscription<List<Tweet>>? _tweetsSubscription;
   StreamSubscription<List<Tweet>>? _authorTweetsSubscription;
   String? _currentAuthorId;
@@ -58,6 +62,8 @@ class TweetStateNotifier extends StateNotifier<TweetState> {
     required this.getTweetsStreamUseCase,
     this.fetchTweetsByAuthorUseCase,
     this.getTweetsByAuthorStreamUseCase,
+    this.toggleLikeUseCase,
+    this.isLikedByUserUseCase,
   }) : super(TweetState.initial()) {
     // 初期化時にツイートを取得
     fetchTweets();
@@ -145,6 +151,40 @@ class TweetStateNotifier extends StateNotifier<TweetState> {
   // 特定のテストユーザーのツイートをリアルタイムで購読する簡易メソッド
   void subscribeToTestUserTweets() {
     subscribeToAuthorTweets('test-user-uid-001');
+  }
+
+  // いいねを切り替えるメソッド
+  Future<void> toggleLike(String tweetId, String userId) async {
+    if (toggleLikeUseCase == null) {
+      state = TweetState.error('いいね機能が利用できません');
+      return;
+    }
+
+    try {
+      print('[TweetStateNotifier] いいねトグル開始: tweetId=$tweetId, userId=$userId');
+      await toggleLikeUseCase!(tweetId, userId);
+      print('[TweetStateNotifier] いいねトグル成功: tweetId=$tweetId, userId=$userId');
+      // いいねの状態変更はFirestoreのリスナーによって自動的に反映される
+    } catch (e) {
+      print(
+        '[TweetStateNotifier] いいねトグル失敗: tweetId=$tweetId, userId=$userId, error=$e',
+      );
+      state = TweetState.error('いいね操作に失敗しました: ${e.toString()}');
+    }
+  }
+
+  // 特定のユーザーがツイートにいいねしているかを確認
+  Future<bool> isLikedByUser(String tweetId, String userId) async {
+    if (isLikedByUserUseCase == null) {
+      return false; // ユースケースがなければいいねしていないものとみなす
+    }
+
+    try {
+      return await isLikedByUserUseCase!(tweetId, userId);
+    } catch (e) {
+      print('いいね状態の確認に失敗しました: ${e.toString()}');
+      return false;
+    }
   }
 
   @override
