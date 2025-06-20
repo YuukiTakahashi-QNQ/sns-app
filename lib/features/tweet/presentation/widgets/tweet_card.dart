@@ -1,36 +1,50 @@
 // lib/features/tweet/presentation/widgets/tweet_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../domain/entities/tweet.dart';
 import '../../data/models/tweet_model.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/debug_utils.dart';
 import '../providers/tweet_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/router/app_router.dart';
 
 class TweetCard extends ConsumerWidget {
   final Tweet tweet;
   final VoidCallback? onTap;
 
   const TweetCard({super.key, required this.tweet, this.onTap});
-
-  Widget _buildUserAvatar() {
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor: Colors.grey.shade200,
-      backgroundImage:
-          tweet.userPhotoUrl != null ? NetworkImage(tweet.userPhotoUrl!) : null,
-      child:
-          tweet.userPhotoUrl == null
-              ? Text(
-                tweet.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              )
-              : null,
+  Widget _buildUserAvatar(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (tweet.userId.isNotEmpty) {
+          // Navigate to user profile page
+          context.goNamed(
+            AppRouteNames.UserProfile,
+            pathParameters: {'userId': tweet.userId},
+          );
+        }
+      },
+      child: CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey.shade200,
+        backgroundImage:
+            tweet.userPhotoUrl != null
+                ? NetworkImage(tweet.userPhotoUrl!)
+                : null,
+        child:
+            tweet.userPhotoUrl == null
+                ? Text(
+                  tweet.userName.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                )
+                : null,
+      ),
     );
   }
 
@@ -141,6 +155,26 @@ class TweetCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildUserInfo(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (tweet.userId.isNotEmpty) {
+          // Navigate to user profile page
+          context.goNamed(
+            AppRouteNames.UserProfile,
+            pathParameters: {'userId': tweet.userId},
+          );
+        }
+      },
+      child: Text(
+        tweet.userName,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
@@ -150,7 +184,7 @@ class TweetCard extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildUserAvatar(),
+            _buildUserAvatar(context),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -158,17 +192,7 @@ class TweetCard extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          tweet.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                      Expanded(child: _buildUserInfo(context)),
                       Text(
                         DateFormatter.formatTweetDate(tweet.createdAt),
                         style: TextStyle(

@@ -9,16 +9,28 @@ service cloud.firestore {
     // リクエストユーザーが対象ドキュメントの所有者かどうかをチェック
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // ユーザードキュメントのルール
+    }    // ユーザードキュメントのルール
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
+        // 自分のプロフィールはフルアクセス
+      // 他のユーザーのフォロー関連フィールド（followers, following）の更新は許可
+      allow update: if isAuthenticated() && (
+        // 自分のプロフィールの場合は全フィールド更新可能
+        isOwner(userId) ||
+        // 他人のプロフィールでも、followersフィールドのみの更新を許可（フォロー操作時）
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])
+        )
+      );
+      
+      // 新規作成は所有者のみ可能
+      allow create: if isOwner(userId);
       
       // テストユーザーの特別なルール
       allow read, write: if userId == 'test-user-uid-001';
-    }    // ツイートドキュメントのルール
+    }
+    
+    // ツイートドキュメントのルール
     match /tweets/{tweetId} {
       // 全ユーザーが読み取り可能
       allow read: if true;

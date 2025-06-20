@@ -47,14 +47,16 @@ class AuthFirestoreService {
       if (user.email.trim().isEmpty) {
         throw AppError.validation('メールアドレスが無効です');
       }
-
       await _getUserDocRef(user.id).set({
         'id': user.id,
         'email': user.email,
-        'displayName': user.displayName ?? '',
-        'photoUrl': user.photoUrl,
-        'createdAt': user.createdAt ?? FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'display_name': user.displayName ?? '',
+        'photo_url': user.photoUrl,
+        'is_email_verified': user.isEmailVerified,
+        'followers': [], // 空のフォロワー配列を追加
+        'following': [], // 空のフォロー中配列を追加
+        'created_at': user.createdAt ?? FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
       throw AppError.database(e, 'ユーザー情報の保存に失敗しました: ${e.message}');
@@ -82,6 +84,30 @@ class AuthFirestoreService {
           photoUrl: firebaseUser.photoURL,
         );
         await createOrUpdateUser(newUser);
+      } else {
+        // ユーザーデータが存在する場合、フォローフィールドの存在を確認
+        bool needsUpdate = false;
+        final updateData = <String, dynamic>{
+          'updated_at': FieldValue.serverTimestamp(),
+        };
+
+        // followersフィールドがない場合は追加
+        if (!userData.containsKey('followers')) {
+          updateData['followers'] = [];
+          needsUpdate = true;
+        }
+
+        // followingフィールドがない場合は追加
+        if (!userData.containsKey('following')) {
+          updateData['following'] = [];
+          needsUpdate = true;
+        }
+
+        // 更新が必要な場合のみFirestoreを更新
+        if (needsUpdate) {
+          await _getUserDocRef(userId).update(updateData);
+          print('フォロー用フィールドをユーザー $userId に追加しました');
+        }
       }
     } catch (e) {
       if (e is AppError) rethrow;
@@ -107,13 +133,14 @@ class AuthFirestoreService {
 
           final userRef = _getUserDocRef(testUserId);
           final tweetRef = _firestore.collection('tweets').doc();
-
           transaction.set(userRef, {
             'id': testUser.id,
             'email': testUser.email,
-            'displayName': testUser.displayName ?? '',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
+            'display_name': testUser.displayName ?? '',
+            'followers': [], // 空のフォロワー配列を追加
+            'following': [], // 空のフォロー中配列を追加
+            'created_at': FieldValue.serverTimestamp(),
+            'updated_at': FieldValue.serverTimestamp(),
           });
 
           transaction.set(tweetRef, {
@@ -153,5 +180,64 @@ class AuthFirestoreService {
         throw AppError.unexpected(error, '認証状態の監視中にエラーが発生しました');
       },
     );
+  }
+
+  /// すべての既存ユーザーにフォローフィールドを追加する（管理者用）
+  Future<void> addFollowFieldsToAllUsers() async {
+    try {
+      final usersCollection = _firestore.collection('users');
+      final querySnapshot = await usersCollection.get();
+
+      int updatedCount = 0;
+
+      // 一度に多くのドキュメントを更新するとエラーになる可能性があるため、
+      // バッチ処理を使用
+      var batch = _firestore.batch();
+      int batchCount = 0;
+
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final Map<String, dynamic> updates = {};
+        bool needsUpdate = false;
+
+        // followersフィールドがない場合は追加
+        if (!data.containsKey('followers')) {
+          updates['followers'] = [];
+          needsUpdate = true;
+        }
+
+        // followingフィールドがない場合は追加
+        if (!data.containsKey('following')) {
+          updates['following'] = [];
+          needsUpdate = true;
+        }
+
+        // 更新が必要な場合のみバッチに追加
+        if (needsUpdate) {
+          batch.update(doc.reference, updates);
+          updatedCount++;
+          batchCount++;
+
+          // 450件ごとにバッチをコミットし、新しいバッチを作成
+          // (Firestoreのバッチ上限は500件)
+          if (batchCount >= 450) {
+            await batch.commit();
+            batch = _firestore.batch();
+            batchCount = 0;
+          }
+        }
+      }
+
+      // 残りのバッチをコミット
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+
+      print('フォローフィールド追加完了: $updatedCount ユーザーを更新しました');
+    } on FirebaseException catch (e) {
+      throw AppError.database(e, 'ユーザー一括更新に失敗しました: ${e.message}');
+    } catch (e) {
+      throw AppError.unexpected(e, 'ユーザー一括更新に失敗しました');
+    }
   }
 }

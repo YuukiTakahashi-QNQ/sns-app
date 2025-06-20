@@ -10,6 +10,7 @@ import '../../features/auth/presentation/providers/auth_state.dart';
 import '../../features/auth/presentation/pages/sign_in_page.dart';
 import '../../features/auth/presentation/pages/sign_up_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/pages/user_profile_page.dart';
 
 // ツイート関連
 import '../../features/tweet/presentation/pages/home_timeline_screen.dart';
@@ -22,6 +23,7 @@ class AppRouteNames {
   static const String SignIn = 'SignIn';
   static const String SignUp = 'SignUp';
   static const String Profile = 'Profile';
+  static const String UserProfile = 'UserProfile';
 }
 
 // GoRouterインスタンスを提供するProvider
@@ -100,6 +102,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: AppRouteNames.Profile,
             builder: (BuildContext context, GoRouterState state) {
               return const ProfilePage(); // プロフィール画面
+            },
+          ),
+          GoRoute(
+            path: '/user/:userId',
+            name: AppRouteNames.UserProfile,
+            builder: (BuildContext context, GoRouterState state) {
+              final userId = state.pathParameters['userId'] ?? '';
+              return UserProfilePage(userId: userId); // ユーザープロフィール画面
             },
           ),
         ],

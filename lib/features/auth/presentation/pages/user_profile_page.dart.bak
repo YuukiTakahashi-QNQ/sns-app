@@ -1,0 +1,281 @@
+// lib/features/auth/presentation/pages/user_profile_page.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/date_formatter.dart';
+import '../../domain/entities/user.dart';
+import '../providers/auth_provider.dart';
+import '../providers/user_provider.dart';
+import '../../../tweet/presentation/providers/tweet_provider.dart';
+import '../../../tweet/presentation/widgets/tweet_list.dart';
+import '../../../tweet/domain/entities/tweet.dart';
+
+class UserProfilePage extends ConsumerWidget {
+  final String userId;
+
+  const UserProfilePage({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserIdAsync = ref.watch(currentUserIdProvider);
+    final userAsync = ref.watch(userStreamProvider(userId));
+    final followStateAsync = ref.watch(followStateProvider);
+    final tweetsAsync = ref.watch(tweetsByAuthorStreamProvider(userId));
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('プロフィール')),
+      body: userAsync.when(
+        data: (user) => _buildUserProfile(
+          context,
+          ref,
+          user,
+          currentUserIdAsync,
+          followStateAsync,
+          tweetsAsync,
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'ユーザー情報の取得に失敗しました: $error', 
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.red.shade800),
+            ),
+          ),
+        ),
+      ),
+    );
+  }  Widget _buildUserProfile(
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+    String? currentUserId,
+    AsyncValue<void> followState,
+    AsyncValue<List<dynamic>> tweetsAsync,
+  ) {
+    final isCurrentUser = currentUserId == user.id;
+    final isFollowing =
+        currentUserId != null ? user.followers.contains(currentUserId) : false;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Force invalidate the providers
+        await Future.delayed(const Duration(milliseconds: 500));
+        ref.invalidate(userStreamProvider(userId));
+        ref.invalidate(tweetsByAuthorStreamProvider(userId));
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ユーザーヘッダー部分（アバター、名前、フォローボタンなど）- スクロールしない固定部分
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  Row(
+                    children: [
+                      // ユーザーアバター
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage:
+                            user.photoUrl != null
+                                ? NetworkImage(user.photoUrl!)
+                                : null,
+                        child:
+                            user.photoUrl == null
+                                ? Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: Colors.grey.shade600,
+                                )
+                                : null,
+                      ),
+                      const SizedBox(width: 16),
+
+                      // ユーザー情報
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.displayName ?? 'ユーザー',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.email,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (user.createdAt != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '登録: ${DateFormatter.formatDetailDate(user.createdAt!)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // フォロー/フォロワー数の表示
+                  Row(
+                    children: [
+                      _buildStatItem(
+                        context,
+                        'フォロー中',
+                        user.followingCount.toString(),
+                      ),
+                      const SizedBox(width: 24),
+                      _buildStatItem(
+                        context,
+                        'フォロワー',
+                        user.followersCount.toString(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // フォローボタン（自分のプロフィールでない場合のみ表示）
+                  if (!isCurrentUser)
+                    _buildFollowButton(
+                      context,
+                      ref,
+                      isFollowing,
+                      followState,
+                      currentUserId,
+                      user.id,
+                    ),
+                ],
+              ),
+            ),
+
+            const Divider(),
+
+            // ツイート一覧
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'ツイート',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            tweetsAsync.when(
+              data:
+                  (tweets) =>
+                      tweets.isEmpty
+                          ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Text(
+                                'ツイートはまだありません',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ),
+                          )
+                          : TweetList(
+                            tweets: tweets.cast<Tweet>(),
+                            onRefresh: () async {
+                              ref.invalidate(
+                                tweetsByAuthorStreamProvider(userId),
+                              );
+                            },
+                          ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error:
+                  (error, stackTrace) =>
+                      Center(child: Text('ツイートの取得に失敗しました: $error')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFollowButton(
+    BuildContext context,
+    WidgetRef ref,
+    bool isFollowing,
+    AsyncValue<void> followState,
+    String? currentUserId,
+    String targetUserId,
+  ) {
+    final isLoading = followState is AsyncLoading;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed:
+            currentUserId == null || isLoading
+                ? null
+                : () {
+                  if (isFollowing) {
+                    ref
+                        .read(followStateProvider.notifier)
+                        .unfollowUser(currentUserId, targetUserId);
+                  } else {
+                    ref
+                        .read(followStateProvider.notifier)
+                        .followUser(currentUserId, targetUserId);
+                  }
+                },
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isFollowing ? Colors.white : Theme.of(context).primaryColor,
+          foregroundColor:
+              isFollowing ? Theme.of(context).primaryColor : Colors.white,
+          side:
+              isFollowing
+                  ? BorderSide(color: Theme.of(context).primaryColor)
+                  : null,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        child:
+            isLoading
+                ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color:
+                        isFollowing
+                            ? Theme.of(context).primaryColor
+                            : Colors.white,
+                  ),
+                )
+                : Text(isFollowing ? 'フォロー中' : 'フォローする'),
+      ),
+    );
+  }
+}
